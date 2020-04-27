@@ -1,0 +1,47 @@
+---
+- name: configuring /etc/sysconfig/network-scripts/ifcfg-eth0
+  replace:
+    path: /etc/sysconfig/network-scripts/ifcfg-eth0
+    regexp: '^DEFROUTE.*=.*'
+    replace: "DEFROUTE=no"
+
+- name: configuring /etc/sysconfig/network-scripts/ifcfg-eth0
+  lineinfile:
+    path: /etc/sysconfig/network-scripts/ifcfg-eth0
+    line: "DEFROUTE=no"
+    state: present
+
+- name: configuring /etc/sysconfig/network-scripts/ifcfg-eth1
+  replace:
+    path: /etc/sysconfig/network-scripts/ifcfg-eth1
+    regexp: '^DEFROUTE.*=.*'
+    replace: "DEFROUTE=yes"
+
+- name: configuring /etc/sysconfig/network-scripts/ifcfg-eth1
+  lineinfile:
+    path: /etc/sysconfig/network-scripts/ifcfg-eth1
+    line: "DEFROUTE=yes"
+    state: present
+
+- name: set static route to a0client
+  nmcli:
+    type: ethernet
+    conn_name: "System eth1"
+    gw4: "192.168.0.1"
+    state: present
+  when: (ansible_hostname == "a0client")
+
+- name: set static route to a1client
+  nmcli:
+    type: ethernet
+    conn_name: "System eth1"
+    gw4: "192.168.1.1"
+    state: present
+  when: (ansible_hostname == "a1client")
+
+- name: set connection state to up
+  shell: "nmcli connection up \"System eth1\""
+
+#"nmcli connection modify System\ eth1 ipv4.gateway "192.168.0.1""
+#"nmcli connection up System\ eth1"
+...

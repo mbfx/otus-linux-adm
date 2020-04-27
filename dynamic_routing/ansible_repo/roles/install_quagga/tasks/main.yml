@@ -1,0 +1,40 @@
+---
+- name: quagga install
+  yum:
+    name: quagga
+    state: present
+
+- name: ospfd provision from template
+  template:
+    backup: true
+    owner: quagga
+    group: quaggavt
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: ospfd.conf.j2, dest: "/etc/quagga/ospfd.conf" }
+
+- name: zebra.conf permissions
+  file:
+    path: "/etc/quagga/zebra.conf"
+    owner: quagga
+    group: quaggavt
+
+- name: selinux zebra_write_config - allow to modify files 
+  seboolean:
+    name: zebra_write_config
+    persistent: yes
+    state: yes
+
+- name: zebra enabled in systemd
+  systemd:
+    name: zebra
+    enabled: true
+    state: started
+
+- name: ospfd enabled in systemd
+  systemd:
+    name: ospfd
+    enabled: true
+    state: started
+...

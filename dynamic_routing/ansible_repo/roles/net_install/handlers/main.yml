@@ -1,0 +1,10 @@
+---
+- name: reload_connections
+  shell: "nmcli connection reload"
+
+- name: restart_network
+  shell: "/etc/init.d/network restart"
+#  systemd:
+#    name: network
+#    state: restarted
+...
