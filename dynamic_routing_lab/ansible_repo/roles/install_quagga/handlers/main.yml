@@ -1,0 +1,6 @@
+---
+- name: restart_quagga
+  systemd:
+    name: zebra
+    state: restarted
+...

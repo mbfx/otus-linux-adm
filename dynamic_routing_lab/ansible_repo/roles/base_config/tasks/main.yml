@@ -1,0 +1,23 @@
+---
+- name: base packages install
+  yum:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+    - libsemanage-python
+    - traceroute
+    - NetworkManager-glib
+    #- libnm-qt-devel
+    - nm-connection-editor
+    - policycoreutils-python
+    - tcpdump
+
+- name: set timezone
+  timezone:
+    name: "{{ ntp_timezone }}"
+
+- name: set hostname
+  hostname:
+    name: "{{ ansible_hostname }}.{{ domain }}"
+...

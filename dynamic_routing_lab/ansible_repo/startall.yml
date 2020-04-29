@@ -1,0 +1,11 @@
+---
+- name: all
+  hosts: all
+  become: true
+  tags:
+    - base
+
+  roles:
+    - base_config
+    - install_quagga
+...
