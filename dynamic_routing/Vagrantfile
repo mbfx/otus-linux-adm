@@ -32,7 +32,13 @@ Vagrant.configure(2) do |config|
   config.vm.define "r4" do |r4|
     r4.vm.network "private_network", ip: "172.16.1.2", virtualbox__intnet: "area1"
     r4.vm.network "private_network", ip: "192.168.1.1", virtualbox__intnet: "area1clients"
+    r4.vm.network "private_network", ip: "172.31.1.2", virtualbox__intnet: "ext"
     r4.vm.hostname = "r4"
+  end
+
+  config.vm.define "b1" do |b1|
+    b1.vm.network "private_network", ip: "172.31.1.1", virtualbox__intnet: "ext"
+    b1.vm.hostname = "b1"
   end
 
   config.vm.define "a0client" do |a0client|

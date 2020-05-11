@@ -25,6 +25,7 @@
     - r2
     - r3
     - r4
+    - b1
   become: true
   tags:
     - network

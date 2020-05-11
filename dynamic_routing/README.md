@@ -1,6 +1,6 @@
-## Базовый стенд для практики в настройке OSPFv2 на Linux.
+32## Базовый стенд для практики в настройке OSPFv2/BGP на Linux.
 
-Попробуйте настроить OSPF ориентируясь на приведенную ниже схему.
+Попробуйте настроить OSPF/BGP ориентируясь на приведенную ниже схему.
 Все маршрутизаторы должны знать обо всех сетях, включая loopback.
 Все маршрутизаторы и рабочие станции должны иметь доступ в Интернет.
 
@@ -28,12 +28,19 @@ router ospf
  passive-interface default
  no passive-interface eth1
  no passive-interface eth2
+ default-information originate
  network 10.0.0.10/32 area 0.0.0.0
  network 172.16.0.0/24 area 0.0.0.0
  network 172.16.1.0/24 area 0.0.0.1
  network 172.31.0.0/24 area 0.0.0.0
  neighbor 172.31.0.2
+ redistribute bgp
 
+router bgp 64512
+ bgp router-id 10.0.0.10
+ neighbor 172.31.1.2 remote-as 64513
+ neighbor 172.31.1.2 activate
+ network 10.0.1.1/32
 ```
 
 Полезные команды:
@@ -43,5 +50,6 @@ show ip route
 show ip route ospf
 show ip ospf
 show ip ospf neighbor
+show bgp *
 ```
 

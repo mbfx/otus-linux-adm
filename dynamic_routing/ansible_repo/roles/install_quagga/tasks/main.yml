@@ -13,6 +13,7 @@
     dest: "{{ item.dest }}"
   with_items:
     - { src: ospfd.conf.j2, dest: "/etc/quagga/ospfd.conf" }
+    - { src: bgpd.conf.j2, dest: "/etc/quagga/bgpd.conf" }
 
 - name: zebra.conf permissions
   file:
@@ -37,4 +38,11 @@
     name: ospfd
     enabled: true
     state: started
+
+- name: ospfd enabled in systemd
+  systemd:
+    name: bgpd
+    enabled: true
+    state: started
+  when: (ansible_hostname == "b1" or ansible_hostname == "r4")
 ...
