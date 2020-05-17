@@ -1,4 +1,8 @@
-.vagrant/
-id_rsa
+.vagrant
+*.vdi
+id_rsa*
 id_rsa.pub
-.git/
+**/temp
+*.key
+*.cert
+*.pem
