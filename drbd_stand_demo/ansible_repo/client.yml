@@ -1,0 +1,4 @@
+---
+- name: Import playbook - Workstations
+  import_playbook: "client_workstations.yml"
+...

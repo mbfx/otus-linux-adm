@@ -1,0 +1,50 @@
+---
+- meta: end_play
+  when: (ansible_distribution != "CentOS" and ansible_distribution_major_version != "7")
+
+- name: Install FreeIPA packages
+  yum:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+    - ipa-client
+    - rng-tools
+  notify:
+    - "restart rngd"
+
+- name: Change DNS
+  nmcli:
+    conn_name: "{{ primary_interface }}"
+    type: ethernet
+    dns4:
+    - "{{ main_dns_server }}"
+    - "{{ second_dns_server }}"
+    dns4_search: "{{ domain }}"
+    state: present
+  notify: "restart NetworkManager"
+
+- meta: flush_handlers
+
+- name: Check for replay (/opt/freeipa_client_done exists)
+  stat:
+    path: /opt/freeipa_client_done
+  register: freeipa_client_done
+
+- name: Install IPA client
+  ignore_errors: true
+  shell: "ipa-client-install -U --mkhomedir --hostname={{ hostname }}.{{ domain }} --force-join --enable-dns-updates --principal={{ idm_principal }} --password={{ IPA_password }} --domain={{ domain }} --server={{ first_idm_server }}.{{ domain }} --realm={{ realm }}"
+  when:
+    - freeipa_client_done.stat.exists != True
+  no_log: true
+
+- name: Set replay protection (/opt/freeipa_client_done)
+  file:
+    path: /opt/freeipa_client_done
+    state: touch
+    owner: root
+    group: root
+    mode: '0744'
+  when:
+    - freeipa_client_done.stat.exists != True
+...

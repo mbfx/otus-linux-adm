@@ -1,0 +1,32 @@
+---
+# Pacemaker
+cluster_virtual_ip: "10.51.21.188"
+pcm_node1: "pcm1"
+pcm_node2: "pcm2"
+pcm_node3: "pcm3"
+resourcename_drbd: "DRBD"
+resourcename_drbd_clone: "DRBDClone"
+resourcename_drbd_mountpoint: "DRBDMount"
+resourcename_cluster_ip: "ClusterIP"
+resourcename_nfs_daemon: "NFSDaemon"
+resourcename_nfs_exporter: "NFSExport"
+# LVM
+lvm_vg_device: "vg_drbd"
+lvm_pv_device1: "/dev/sdb"
+lvm_pv_device2: "/dev/sdc"
+lvm_pv_device3: ""
+lvm_pv_device4: ""
+lvm_lv_name: "lv_drbd"
+# DRBD
+drbd_resource: "drbd_storage"
+drbd_device: "/dev/drbd0"
+drbd_device_name: "drbd0"
+drbd_port: "7788"
+drbd_mountpoint: "/mnt/drbd_storage"
+drbd_node1: "pcm1"
+drbd_node1_ip: "10.51.21.183"
+drbd_node2: "pcm2"
+drbd_node2_ip: "10.51.21.184"
+drbd_node3: "pcm3"
+drbd_node3_ip: "10.51.21.185"
+...

@@ -1,0 +1,6 @@
+---
+- name: "restart rpc_gssd"
+  systemd:
+    name: rpc-gssd
+    state: restarted
+...

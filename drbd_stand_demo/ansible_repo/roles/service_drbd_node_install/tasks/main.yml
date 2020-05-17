@@ -1,0 +1,110 @@
+---
+- meta: end_play
+  when: (ansible_distribution != "CentOS" and ansible_distribution_major_version != "7")
+
+- name: Install ELrepo
+  yum:
+    name: "https://www.elrepo.org/elrepo-release-7.0-4.el7.elrepo.noarch.rpm"
+    state: present
+
+- name: Install drbd
+  yum:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+    - kmod-drbd90
+    - drbd90-utils
+
+- name: Loading DRBD Kernel Module
+  modprobe:
+    name: drbd
+    state: present
+
+- name: Disable DRBD in systemd
+  systemd:
+    name: drbd.service
+    state: stopped
+    enabled: no
+
+- name: Provision DRBD config
+  template:
+    backup: true
+    owner: root
+    group: root
+    mode: '0744'
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: drbd_config.j2, dest: "/etc/drbd.d/{{ drbd_device_name }}.res" }
+
+- name: Set drbd_t to permissive
+  selinux_permissive:
+    name: drbd_t
+    permissive: true
+
+- name: Configuring firewall ports
+  firewalld:
+    port: "{{ item }}"
+    permanent: yes
+    state: enabled
+    immediate: yes
+  with_items:
+    - "7788/tcp"
+
+- name: Check for replay (/opt/drbd_node_done exists)
+  stat:
+    path: /opt/drbd_node_done
+  register: drbd_node_done
+
+- name: Create DRBD device
+  command: "{{ item }}"
+  with_items:
+    - "drbdadm create-md {{ drbd_resource }} --force"
+    - "drbdadm up {{ drbd_resource }}"
+  when:
+    - drbd_node_done.stat.exists != True
+
+- name: Set DRBD Primary node
+  command: "{{ item }}"
+  with_items:
+    - "drbdadm primary {{ drbd_resource }} --force"
+  when:
+    - drbd_node_done.stat.exists != True
+  run_once: True
+
+- name: "Create xfs on {{ drbd_device }}"
+  filesystem:
+    fstype: xfs
+    dev: "{{ drbd_device }}"
+    force: yes
+  run_once: True
+  ignore_errors: true
+
+- name: Set replay protection (/opt/drbd_node_done)
+  file:
+    path: /opt/drbd_node_done
+    state: touch
+    owner: root
+    group: root
+    mode: '0744'
+  when:
+    - drbd_node_done.stat.exists != True
+
+- name: "Create {{ drbd_mountpoint }}"
+  file:
+    path: "{{ drbd_mountpoint }}"
+    owner: root
+    group: root
+    mode: '0757'
+    state: directory
+
+- name: Allow mountpoint to be public
+  sefcontext:
+    target: "{{ drbd_mountpoint }}(/.*)?"
+    setype: public_content_rw_t
+    state: present
+
+- name: Apply new SELinux file context to mountpoint
+  command: "restorecon {{ drbd_mountpoint }}"
+...

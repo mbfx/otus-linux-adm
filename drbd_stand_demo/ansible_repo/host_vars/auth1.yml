@@ -1,0 +1,5 @@
+---
+hostname: "auth1"
+prod_ip_addr: "10.51.21.181"
+primary_interface: "eth0"
+...

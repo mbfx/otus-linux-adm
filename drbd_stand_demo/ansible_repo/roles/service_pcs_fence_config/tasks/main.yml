@@ -1,0 +1,31 @@
+---
+- meta: end_play
+  when: (ansible_distribution != "CentOS" and ansible_distribution_major_version != "7")
+
+- name: Check for replay (/opt/pcs_fence_config_done exists)
+  stat:
+    path: /opt/pcs_fence_config_done
+  register: pcs_fence_config_done
+
+- name: Configure fencing on kvm
+  command: "{{ item }}"
+  with_items:
+    - "pcs stonith create pcm1_fence_dev fence_pve ipaddr=\"{{ hypervisor_node_addr }}\" inet4_only=\"true\" node_name=\"{{ hypervisor_node_name }}\" login=\"{{ KVM_login }}\" passwd=\"{{ KVM_password }}\" power_wait=\"15\" port=\"{{ pcm1_vm_nodeid }}\" vmtype=\"qemu\" pcmk_host_list=\"{{ pcm_node1 }}.{{ domain }}\""
+    - "pcs stonith create pcm2_fence_dev fence_pve ipaddr=\"{{ hypervisor_node_addr }}\" inet4_only=\"true\" node_name=\"{{ hypervisor_node_name }}\" login=\"{{ KVM_login }}\" passwd=\"{{ KVM_password }}\" power_wait=\"15\" port=\"{{ pcm2_vm_nodeid }}\" vmtype=\"qemu\" pcmk_host_list=\"{{ pcm_node2 }}.{{ domain }}\""
+    - "pcs stonith create pcm3_fence_dev fence_pve ipaddr=\"{{ hypervisor_node_addr }}\" inet4_only=\"true\" node_name=\"{{ hypervisor_node_name }}\" login=\"{{ KVM_login }}\" passwd=\"{{ KVM_password }}\" power_wait=\"15\" port=\"{{ pcm3_vm_nodeid }}\" vmtype=\"qemu\" pcmk_host_list=\"{{ pcm_node3 }}.{{ domain }}\""
+    - "pcs constraint location pcm1_fence_dev avoids {{ pcm_node1 }}.{{ domain }}"
+    - "pcs constraint location pcm2_fence_dev avoids {{ pcm_node2 }}.{{ domain }}"
+    - "pcs constraint location pcm3_fence_dev avoids {{ pcm_node3 }}.{{ domain }}"
+  when: (ansible_virtualization_type == "kvm" and pcs_fence_config_done.stat.exists != True)
+  no_log: true
+  
+- name: Set replay protection (/opt/pcs_fence_config_done)
+  file:
+    path: /opt/pcs_fence_config_done
+    state: touch
+    owner: root
+    group: root
+    mode: '0744'
+  when:
+    - pcs_fence_config_done.stat.exists != True
+...

@@ -1,0 +1,53 @@
+---
+- meta: end_play
+  when: (ansible_distribution != "CentOS" and ansible_distribution_major_version != "7")
+
+- name: Install X11 packages
+  yum:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+    - xorg-x11-server-Xorg
+    - xorg-x11-apps
+    - xorg-x11-xauth
+    - xorg-x11-utils
+    - xorg-x11-fonts-*
+    - dbus-x11
+
+- name: Enable X11 Forwarding
+  replace:
+    path: "/etc/ssh/sshd_config"
+    regexp: '.*X11Forwarding.*'
+    replace: "X11Forwarding yes"
+  notify: "reload sshd"
+
+- name: Set X11DisplayOffset
+  replace:
+    path: "/etc/ssh/sshd_config"
+    regexp: '.*X11DisplayOffset.*'
+    replace: "X11DisplayOffset 10"
+  notify: "reload sshd"
+
+- name: Set X11UseLocalhost
+  replace:
+    path: "/etc/ssh/sshd_config"
+    regexp: '.*X11UseLocalhost.*'
+    replace: "X11UseLocalhost no"
+  notify: "reload sshd"
+
+- name: Set X11UseLocalhost
+  replace:
+    path: "/etc/ssh/sshd_config"
+    regexp: '.*PasswordAuthentication.*'
+    replace: "PasswordAuthentication yes"
+  notify: "reload sshd"
+
+- name: Install firefox
+  yum:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+    - firefox
+...

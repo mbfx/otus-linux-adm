@@ -1,0 +1,16 @@
+---
+- name: "restart nfs_config"
+  systemd:
+    name: nfs-config
+    state: restarted
+
+- name: "restart rpc_gssd"
+  systemd:
+    name: rpc-gssd
+    state: restarted
+
+- name: "restart nfs_idmapd"
+  systemd:
+    name: nfs-idmapd
+    state: restarted
+...

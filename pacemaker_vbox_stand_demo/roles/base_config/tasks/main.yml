@@ -1,0 +1,67 @@
+---
+- meta: end_play
+  when: (ansible_distribution != "CentOS" and ansible_distribution_major_version != "7")
+
+- name: Install epel-release
+  yum:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+    - epel-release
+
+- name: Set timezone
+  timezone:
+    name: "{{ ntp_timezone }}"
+
+- name: Force timesync with chrony
+  shell: "chronyc -a makestep"
+
+- name: Install additional packages
+  yum:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+    - python2-cryptography
+    - setools-console
+    - libsemanage-python
+    - policycoreutils-python
+
+- name: Set hostname
+  hostname: 
+    name: "{{ ansible_hostname }}.{{ domain }}"
+
+- name: Add my own IP address to /etc/hosts instead localhost
+  replace:
+    path: "/etc/hosts"
+    regexp: '^127\.0\.0\.1(\s+){{ ansible_hostname }}(\s+){{ ansible_hostname }}.*'
+    replace: "{{ ansible_host }} {{ ansible_hostname }}.{{ domain }} {{ ansible_hostname }}"
+
+- name: Add pcs1 to /etc/hosts
+  lineinfile:
+    path: "/etc/hosts"
+    state: present
+    line: "192.168.11.201 pcs1.{{ domain }} {{ ansible_hostname }}"
+  when: (ansible_hostname != "pcs1")
+
+- name: Add pcs2 to /etc/hosts
+  lineinfile:
+    path: "/etc/hosts"
+    state: present
+    line: "192.168.11.202 pcs2.{{ domain }} {{ ansible_hostname }}"
+  when: (ansible_hostname != "pcs2")
+
+- name: Add pcs3 to /etc/hosts
+  lineinfile:
+    path: "/etc/hosts"
+    state: present
+    line: "192.168.11.203 pcs3.{{ domain }} {{ ansible_hostname }}"
+  when: (ansible_hostname != "pcs3")
+
+- name: Enable and start FirewallD
+  systemd:
+    name: firewalld
+    state: started
+    enabled: true
+...

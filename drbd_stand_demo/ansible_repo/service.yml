@@ -1,0 +1,7 @@
+---
+- name: Import playbook - Auth and DNS
+  import_playbook: "service_auth_servers.yml"
+
+- name: Import playbook - Storage
+  import_playbook: "service_storage_servers.yml"
+...

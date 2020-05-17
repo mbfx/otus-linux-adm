@@ -1,0 +1,5 @@
+---
+hostname: "pcm3"
+prod_ip_addr: "10.51.21.185"
+primary_interface: "eth0"
+...

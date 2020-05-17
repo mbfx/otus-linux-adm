@@ -1,0 +1,82 @@
+---
+- meta: end_play
+  when: (ansible_distribution != "CentOS" and ansible_distribution_major_version != "7")
+
+- name: Add ClusterIP to DNS
+  ipa_dnsrecord:
+    ipa_host: "{{ first_idm_server }}.{{ domain }}"
+    ipa_pass: "{{ IPA_password }}"
+    state: present
+    zone_name: "{{ domain }}"
+    record_name: "{{ cluster_name }}"
+    record_type: "A"
+    record_value: "{{ cluster_virtual_ip }}"
+
+- name: Add "{{ cluster_name }}" host to domain
+  ipa_host:
+    fqdn: "{{ cluster_name }}.{{ domain }}"
+    state: present
+    ipa_host: "{{ first_idm_server }}.{{ domain }}"
+    ipa_pass: "{{ IPA_password }}"
+
+- name: Add NFS service to domain
+  ipa_service:
+    name: "nfs/{{ cluster_name }}.{{ domain }}"
+    state: present
+    ipa_host: "{{ first_idm_server }}.{{ domain }}"
+    ipa_pass: "{{ IPA_password }}"
+
+- name: Kerberos init
+  shell: "{{ item }}"
+  with_items:
+    - "echo -n \'{{ IPA_password }}\' | kinit admin"
+  no_log: true
+
+- name: Allow hosts to retrieve and create service keytab
+  shell: "{{ item }}"
+  with_items:
+    - "echo -n \'{{ IPA_password }}\' | kinit admin"
+    - "ipa service-allow-retrieve-keytab nfs/{{ cluster_name }}.{{ domain }} --hosts={{ pcm_node1 }}.{{ domain }}"
+    - "ipa service-allow-retrieve-keytab nfs/{{ cluster_name }}.{{ domain }} --hosts={{ pcm_node2 }}.{{ domain }}"
+    - "ipa service-allow-retrieve-keytab nfs/{{ cluster_name }}.{{ domain }} --hosts={{ pcm_node3 }}.{{ domain }}"
+    - "ipa service-allow-create-keytab nfs/{{ cluster_name }}.{{ domain }} --hosts={{ pcm_node1 }}.{{ domain }}"
+    - "ipa service-allow-create-keytab nfs/{{ cluster_name }}.{{ domain }} --hosts={{ pcm_node2 }}.{{ domain }}"
+    - "ipa service-allow-create-keytab nfs/{{ cluster_name }}.{{ domain }} --hosts={{ pcm_node3 }}.{{ domain }}"
+  ignore_errors: yes
+
+- name: Create service keytab on {{ pcm_node1 }}.{{ domain }}
+  shell: "{{ item }}"
+  with_items:
+    - "kinit -kt /etc/krb5.keytab"
+    - "ipa-getkeytab -s {{ first_idm_server }}.{{ domain }} -p nfs/{{ cluster_name }}.{{ domain }} -k /etc/krb5.keytab"
+    - "kdestroy"
+  notify: "restart rpc_gssd"
+
+- name: Retrieve service keytab on {{ pcm_node2 }}.{{ domain }}
+  shell: "{{ item }}"
+  with_items:
+    - "kinit -kt /etc/krb5.keytab"
+    - "ipa-getkeytab -r -s {{ first_idm_server }}.{{ domain }} -p nfs/{{ cluster_name }}.{{ domain }} -k /etc/krb5.keytab"
+    - "kdestroy"
+  delegate_to: "{{ pcm_node2 }}"
+
+- name: Restart rpc_gssd on {{ pcm_node2 }}.{{ domain }}
+  systemd:
+    name: rpc-gssd
+    state: restarted
+  delegate_to: "{{ pcm_node2 }}"
+
+- name: Retrieve service keytab on {{ pcm_node3 }}.{{ domain }}
+  shell: "{{ item }}"
+  with_items:
+    - "kinit -kt /etc/krb5.keytab"
+    - "ipa-getkeytab -r -s {{ first_idm_server }}.{{ domain }} -p nfs/{{ cluster_name }}.{{ domain }} -k /etc/krb5.keytab"
+    - "kdestroy"
+  delegate_to: "{{ pcm_node3 }}"
+
+- name: Restart rpc_gssd on {{ pcm_node3 }}.{{ domain }}
+  systemd:
+    name: rpc-gssd
+    state: restarted
+  delegate_to: "{{ pcm_node3 }}"
+...

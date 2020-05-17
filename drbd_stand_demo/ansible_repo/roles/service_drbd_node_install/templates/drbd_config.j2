@@ -1,0 +1,26 @@
+resource {{ drbd_resource }} {
+    protocol C;
+    device {{ drbd_device }};
+    disk /dev/{{ lvm_vg_device }}/{{ lvm_lv_name }};
+    meta-disk internal;
+    on {{ drbd_node1 }} {
+        node-id 0;
+        address {{ drbd_node1_ip }}:{{ drbd_port }};
+    }
+    on {{ drbd_node2 }} {
+        node-id 1;
+        address {{ drbd_node2_ip }}:{{ drbd_port }};
+    }
+    on {{ drbd_node3 }} {
+        node-id 2;
+        address {{ drbd_node3_ip }}:{{ drbd_port }};
+    }
+    connection-mesh {
+        hosts {{ drbd_node1 }} {{ drbd_node2 }} {{ drbd_node3 }};
+        net {
+            use-rle yes;
+            csums-alg sha1;
+            data-integrity-alg sha1;
+        }
+    }
+}

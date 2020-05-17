@@ -1,0 +1,75 @@
+---
+- meta: end_play
+  when: (ansible_distribution != "CentOS" and ansible_distribution_major_version != "7")
+
+- name: Configuring cluster (step 1)
+  command: "{{ item }}"
+  with_items:
+    - " pcs cluster auth pcs1.{{ domain }} pcs2.{{ domain }} pcs3.{{ domain }} -u hacluster -p {{ pcs_password }}"
+  no_log: true
+  
+- name: Check for replay (/opt/pcs_config_done exists)
+  stat:
+    path: /opt/pcs_config_done
+  register: pcs_config_done
+
+
+
+- name: Configuring cluster (step 2)
+  command: "{{ item }}"
+  with_items:
+    - "pcs cluster setup --name {{ cluster_name }} pcs1.{{ domain }} pcs2.{{ domain }} pcs3.{{ domain }}"
+  when:
+    - pcs_config_done.stat.exists != True
+
+- name: Set replay protection (/opt/pcs_config_done)
+  file:
+    path: /opt/pcs_config_done
+    state: touch
+    owner: root
+    group: root
+    mode: '0744'
+  when:
+    - pcs_config_done.stat.exists != True
+
+
+
+- name: Configuring cluster (step 3)
+  command: "{{ item }}"
+  with_items:
+    - "pcs cluster enable --all"
+    - "pcs cluster start --all"
+
+- name: Wait a little
+  pause:
+    seconds: 10
+
+
+
+- name: Check for replay (/opt/pcs_fence_config_done exists)
+  stat:
+    path: /opt/pcs_fence_config_done
+  register: pcs_fence_config_done
+
+- name: Configure fencing on Virtualbox
+  command: "{{ item }}"
+  with_items:
+    - "pcs stonith create pcs1_fence_dev fence_vbox ipaddr=\"{{ virtualbox_host }}\" login=\"{{ virtualbox_host_username }}\" passwd=\"{{ virtualbox_host_password }}\" power_wait=\"10\" secure=\"1\" port=\"pcs1\" pcmk_host_list=\"pcs1.{{ domain }}\""
+    - "pcs stonith create pcs2_fence_dev fence_vbox ipaddr=\"{{ virtualbox_host }}\" login=\"{{ virtualbox_host_username }}\" passwd=\"{{ virtualbox_host_password }}\" power_wait=\"10\" secure=\"1\" port=\"pcs2\" pcmk_host_list=\"pcs2.{{ domain }}\""
+    - "pcs stonith create pcs3_fence_dev fence_vbox ipaddr=\"{{ virtualbox_host }}\" login=\"{{ virtualbox_host_username }}\" passwd=\"{{ virtualbox_host_password }}\" power_wait=\"10\" secure=\"1\" port=\"pcs3\" pcmk_host_list=\"pcs3.{{ domain }}\""
+    - "pcs constraint location pcs1_fence_dev avoids pcs1.{{ domain }}"
+    - "pcs constraint location pcs2_fence_dev avoids pcs2.{{ domain }}"
+    - "pcs constraint location pcs3_fence_dev avoids pcs3.{{ domain }}"
+  when: (ansible_virtualization_type == "virtualbox" and pcs_fence_config_done.stat.exists != True)
+  no_log: true
+  
+- name: Set replay protection (/opt/pcs_fence_config_done)
+  file:
+    path: /opt/pcs_fence_config_done
+    state: touch
+    owner: root
+    group: root
+    mode: '0744'
+  when:
+    - pcs_fence_config_done.stat.exists != True
+...

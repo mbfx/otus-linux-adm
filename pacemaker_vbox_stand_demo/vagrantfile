@@ -1,0 +1,60 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+home = ENV['HOME']
+
+Vagrant.configure(2) do |config|
+
+  config.vm.define "pcs1" do |main|
+    main.vm.network "private_network", adapter: 2, :device => "eth1", auto_config: false, virtualbox__intnet: "internal-net" # Internal network
+    main.vm.network "private_network", adapter: 3, :device => "eth2", ip: '192.168.11.201', netmask: "255.255.255.0" # Management
+    main.vm.hostname = "pcs1"
+    main.vm.box = "centos/7"
+    main.vm.box_version = "1905.1"
+    main.vm.provider :virtualbox do |virtualbox|
+      virtualbox.name = "pcs1"
+      virtualbox.customize ["modifyvm", :id, "--memory", "1024"]
+      virtualbox.customize ["modifyvm", :id, "--cpus", "1"]
+    end
+  end
+
+  config.vm.define "pcs2" do |main|
+    main.vm.network "private_network", adapter: 2, :device => "eth1", auto_config: false, virtualbox__intnet: "internal-net" # Internal network
+    main.vm.network "private_network", adapter: 3, :device => "eth2", ip: '192.168.11.202', netmask: "255.255.255.0" # Management
+    main.vm.hostname = "pcs2"
+    main.vm.box = "centos/7"
+    main.vm.box_version = "1905.1"
+    main.vm.provider :virtualbox do |virtualbox|
+      virtualbox.name = "pcs2"
+      virtualbox.customize ["modifyvm", :id, "--memory", "1024"]
+      virtualbox.customize ["modifyvm", :id, "--cpus", "1"]
+    end
+  end
+
+  config.vm.define "pcs3" do |main|
+    main.vm.network "private_network", adapter: 2, :device => "eth1", auto_config: false, virtualbox__intnet: "internal-net" # Internal network
+    main.vm.network "private_network", adapter: 3, :device => "eth2", ip: '192.168.11.203', netmask: "255.255.255.0" # Management
+    main.vm.hostname = "pcs3"
+    main.vm.box = "centos/7"
+    main.vm.box_version = "1905.1"
+    main.vm.provider :virtualbox do |virtualbox|
+      virtualbox.name = "pcs3"
+      virtualbox.customize ["modifyvm", :id, "--memory", "1024"]
+      virtualbox.customize ["modifyvm", :id, "--cpus", "1"]
+    end
+  end
+
+  config.vm.provision "shell", run: "always", inline: <<-SHELL
+    mkdir -p ~root/.ssh
+    cp ~vagrant/.ssh/auth* ~root/.ssh
+  SHELL
+
+  #config.vm.provision "ansible" do |ansible|
+  #  ansible.compatibility_mode = "2.0"
+  #  ansible.playbook = "main.yml"
+  #  ansible.verbose = "false"
+  #  ansible.become = "true"
+  #end
+
+end
+

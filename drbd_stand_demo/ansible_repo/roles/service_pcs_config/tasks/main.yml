@@ -1,0 +1,83 @@
+---
+- meta: end_play
+  when: (ansible_distribution != "CentOS" and ansible_distribution_major_version != "7")
+
+- name: Configuring cluster (step 1)
+  command: "{{ item }}"
+  with_items:
+    - " pcs cluster auth {{ pcm_node1 }}.{{ domain }} {{ pcm_node2 }}.{{ domain }} {{ pcm_node3 }}.{{ domain }} -u hacluster -p {{ pcm_password }}"
+  no_log: true
+  
+- name: Check for replay (/opt/pcs_config_done exists)
+  stat:
+    path: /opt/pcs_config_done
+  register: pcs_config_done
+
+- name: Configuring cluster (step 2)
+  command: "{{ item }}"
+  with_items:
+    - "pcs cluster setup --name {{ cluster_name }} {{ pcm_node1 }}.{{ domain }} {{ pcm_node2 }}.{{ domain }} {{ pcm_node3 }}.{{ domain }}"
+  when:
+    - pcs_config_done.stat.exists != True
+
+- name: Set replay protection (/opt/pcs_config_done)
+  file:
+    path: /opt/pcs_config_done
+    state: touch
+    owner: root
+    group: root
+    mode: '0744'
+  when:
+    - pcs_config_done.stat.exists != True
+
+- name: Configuring cluster (step 3)
+  command: "{{ item }}"
+  with_items:
+    - "pcs cluster enable --all"
+    - "pcs cluster start --all"
+
+- name: Wait a little
+  pause:
+    seconds: 10
+
+- name: Check for replay (/opt/pcs_config2_done exists)
+  stat:
+    path: /opt/pcs_config2_done
+  register: pcs_config2_done
+
+- name: Configuring cluster (step 2)
+  command: "{{ item }}"
+  with_items:
+    - "pcs cluster cib tmp_drbd_cfg"
+    - "pcs -f tmp_drbd_cfg resource defaults resource-stickiness=100"
+    - "pcs -f tmp_drbd_cfg resource op defaults timeout=10s"
+    - "pcs -f tmp_drbd_cfg resource create {{ resourcename_drbd }} ocf:linbit:drbd drbd_resource={{ drbd_resource }} op monitor interval=5s"
+    - "pcs -f tmp_drbd_cfg resource master {{ resourcename_drbd_clone }} {{ resourcename_drbd }} master-max=1 master-node-max=1 clone-node-max=1 notify=true"
+    - "pcs -f tmp_drbd_cfg resource create {{ resourcename_drbd_mountpoint }} Filesystem device={{ drbd_device }} directory={{ drbd_mountpoint }} fstype=xfs"
+    - "pcs -f tmp_drbd_cfg constraint colocation add {{ resourcename_drbd_mountpoint }} with {{ resourcename_drbd_clone }} INFINITY with-rsc-role=Master"
+    - "pcs -f tmp_drbd_cfg constraint order promote {{ resourcename_drbd_clone }} then start {{ resourcename_drbd_mountpoint }}"
+    - "pcs -f tmp_drbd_cfg resource create {{ resourcename_cluster_ip}} ocf:heartbeat:IPaddr2 ip={{ cluster_virtual_ip }} cidr_netmask={{ network_cidr }} op monitor interval=8s"
+    - "pcs -f tmp_drbd_cfg constraint colocation add {{ resourcename_cluster_ip}} with {{ resourcename_drbd_clone }} INFINITY with-rsc-role=Master"
+    - "pcs -f tmp_drbd_cfg constraint order start {{ resourcename_drbd_mountpoint }} then start {{ resourcename_cluster_ip }}"
+    - "pcs -f tmp_drbd_cfg resource create {{ resourcename_nfs_daemon }} systemd:nfs-server op monitor interval=10s"
+    - "pcs -f tmp_drbd_cfg resource clone {{ resourcename_nfs_daemon }}"
+    - "pcs -f tmp_drbd_cfg constraint order start {{ resourcename_cluster_ip}} then start {{ resourcename_nfs_daemon }}-clone"
+    - "pcs -f tmp_drbd_cfg constraint colocation add {{ resourcename_nfs_daemon }}-clone with {{ resourcename_drbd_clone }} INFINITY with-rsc-role=Master"
+    - "pcs -f tmp_drbd_cfg resource create {{ resourcename_nfs_exporter }} ocf:heartbeat:exportfs fsid=0 directory={{ drbd_mountpoint }} options=\"rw,crossmnt,sec=krb5p,sync\" clientspec=\"{{ network_addr }}/{{ network_cidr }}\" op monitor interval=10s"
+    - "pcs -f tmp_drbd_cfg resource clone {{ resourcename_nfs_exporter }}"
+    - "pcs -f tmp_drbd_cfg constraint colocation add {{ resourcename_nfs_exporter }}-clone with {{ resourcename_drbd_clone }} INFINITY with-rsc-role=Master"
+    - "pcs -f tmp_drbd_cfg constraint order start {{ resourcename_nfs_daemon }}-clone then start {{ resourcename_nfs_exporter }}-clone"
+    - "pcs cluster cib-push tmp_drbd_cfg --config"
+  when:
+    - pcs_config2_done.stat.exists != True
+
+- name: Set replay protection (/opt/pcs_config2_done)
+  file:
+    path: /opt/pcs_config2_done
+    state: touch
+    owner: root
+    group: root
+    mode: '0744'
+  when:
+    - pcs_config2_done.stat.exists != True
+...

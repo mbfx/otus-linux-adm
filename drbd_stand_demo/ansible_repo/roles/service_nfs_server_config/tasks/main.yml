@@ -1,0 +1,104 @@
+---
+- meta: end_play
+  when: (ansible_distribution != "CentOS" and ansible_distribution_major_version != "7")
+
+- name: Enable IDMAPD
+  systemd:
+    name: nfs-idmapd
+    state: stopped
+    enabled: yes
+
+- name: Configure idmapd
+  replace:
+    path: "/etc/idmapd.conf"
+    regexp: '#Domain.*'
+    replace: "Domain = {{ domain }}"
+  notify: "restart nfs_idmapd"
+
+- name: Configure rpc.nfsd
+  replace:
+    path: "/etc/sysconfig/nfs"
+    regexp: '.*RPCNFSDARGS.*'
+    replace: "RPCNFSDARGS=\"-N2 -N3 -N4 -N4.0 -N4.1 -V4.2 -U\""
+  notify: "restart nfs_config"
+
+- name: Configure rpc.mountd
+  replace:
+    path: "/etc/sysconfig/nfs"
+    regexp: '.*RPCMOUNTDOPTS.*'
+    replace: "RPCMOUNTDOPTS=\"-N2 -N3 -N4 -N4.0 -N4.1 -V4.2 -u\""
+  notify: "restart nfs_config"
+
+- name: Configure NFS
+  replace:
+    path: "/etc/sysconfig/nfs"
+    regexp: '.*RPCNFSDCOUNT.*'
+    replace: "RPCNFSDCOUNT=16"
+  notify: "restart nfs_config"
+
+- name: Configure NFS
+  replace:
+    path: "/etc/sysconfig/nfs"
+    regexp: '.*NFSD_V4_GRACE.*'
+    replace: "NFSD_V4_GRACE=10"
+  notify: "restart nfs_config"
+
+- name: Configure NFS
+  replace:
+    path: "/etc/sysconfig/nfs"
+    regexp: '.*NFSD_V4_LEASE.*'
+    replace: "NFSD_V4_LEASE=10"
+  notify: "restart nfs_config"
+
+- name: Configure rpc.gssd
+  replace:
+    path: "/etc/sysconfig/nfs"
+    regexp: '.*RPCGSSDARGS.*'
+    replace: "RPCGSSDARGS=\"-T 10 -t 10\""
+  notify: "restart rpc_gssd"
+
+- name: Disable unused NFS services
+  systemd:
+    name: "{{ item }}"
+    state: stopped
+    enabled: no
+  with_items:
+    - rpcbind.service
+    - rpc-statd.service
+    - rpcbind.socket
+
+- name: Enable NFS service, but stop it
+  systemd:
+    name: nfs-server.service
+    state: stopped
+    enabled: yes
+
+- name: Configuring firewall services
+  firewalld:
+    service: "{{ item }}"
+    permanent: yes
+    state: enabled
+    immediate: yes
+  with_items:
+    - nfs
+    - rpc-bind
+    - mountd
+
+- name: Allow export all RO on SELinux
+  seboolean:
+    name: nfs_export_all_ro
+    state: yes
+    persistent: yes
+
+- name: Allow export all RW on SELinux
+  seboolean:
+    name: nfs_export_all_rw
+    state: yes
+    persistent: yes
+
+- name: Allow export home dirs on SELinux
+  seboolean:
+    name: use_nfs_home_dirs
+    state: yes
+    persistent: yes
+...

@@ -1,0 +1,12 @@
+---
+- meta: end_play
+  when: (ansible_distribution != "CentOS" and ansible_distribution_major_version != "7")
+
+- name: Install NFS server
+  yum:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+    - nfs-utils
+...

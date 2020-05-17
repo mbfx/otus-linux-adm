@@ -1,0 +1,68 @@
+---
+- meta: end_play
+  when: (ansible_distribution != "CentOS" and ansible_distribution_major_version != "7")
+
+- name: Install epel-release
+  yum:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+    - epel-release
+
+- name: Install ntp and TZ data
+  yum:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+    - ntp
+    - tzdata
+
+- name: Disable chronyd
+  systemd:
+    name: chronyd
+    enabled: false
+    state: stopped
+
+- name: Set timezone
+  timezone:
+    name: "{{ ntp_timezone }}"
+
+- name: Stop ntpd before forced timesync
+  systemd:
+    name: ntpd
+    state: stopped
+
+- name: Force synctime
+  command: "ntpdate -s {{ init_ntp_server }}"
+  ignore_errors: yes
+
+- name: Enable and start ntpd
+  systemd:
+    name: ntpd
+    enabled: true
+    state: started
+
+- name: Install additional packages
+  yum:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+    - python2-cryptography
+    - setools-console
+    - libsemanage-python
+    - policycoreutils-python
+    - bind-utils
+
+- name: Set hostname
+  hostname: 
+    name: "{{ hostname }}.{{ domain }}"
+
+- name: Add my own IP address to /etc/hosts instead localhost
+  replace:
+    path: "/etc/hosts"
+    regexp: '^127\.0\.0\.1(\s+){{ ansible_hostname }}(\s+){{ ansible_hostname }}.*'
+    replace: "{{ prod_ip_addr }} {{ ansible_hostname }}.{{ domain }} {{ ansible_hostname }}"
+...

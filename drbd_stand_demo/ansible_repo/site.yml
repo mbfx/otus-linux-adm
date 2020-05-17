@@ -1,0 +1,7 @@
+---
+- name: Import playbook - Service
+  import_playbook: "service.yml"
+
+- name: Import playbook - Clients
+  import_playbook: "client.yml"
+...

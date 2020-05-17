@@ -1,0 +1,79 @@
+---
+- meta: end_play
+  when: (ansible_distribution != "CentOS" and ansible_distribution_major_version != "7")
+
+- name: Install FreeIPA packages
+  yum:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+    - ipa-server
+    - ipa-server-dns
+    - rng-tools
+  notify:
+    - "restart rngd"
+
+- name: Configuring firewall services
+  firewalld:
+    service: "{{ item }}"
+    permanent: yes
+    state: enabled
+    immediate: yes
+  with_items:
+    - ssh
+    - http
+    - https
+    - dns
+    - freeipa-ldap
+    - freeipa-ldaps
+    - freeipa-replication
+    - kerberos
+    - kadmin
+    - ntp
+
+- name: Configuring firewall ports
+  firewalld:
+    port: "{{ item }}"
+    permanent: yes
+    state: enabled
+    immediate: yes
+  with_items:
+    - "53/tcp"
+    - "88/udp"
+    - "464/udp"
+
+- name: Change DNS
+  nmcli:
+    conn_name: "{{ primary_interface }}"
+    type: ethernet
+    dns4:
+    - "{{ main_dns_server }}"
+    - "{{ second_dns_server }}"
+    dns4_search: "{{ domain }}"
+    state: present
+  notify: "restart NetworkManager"
+
+- meta: flush_handlers
+
+- name: Check for replay (/opt/freeipa_replica_done exists)
+  stat:
+    path: /opt/freeipa_replica_done
+  register: freeipa_replica_done
+
+- name: Install IPA replica
+  shell: "ipa-replica-install -U --server={{ first_idm_server }}.{{ domain }} --domain={{ domain }} --principal={{ idm_principal }} --admin-password={{ IPA_password }} --setup-dns --no-forwarders --setup-ca"
+  when:
+    - freeipa_replica_done.stat.exists != True
+#  no_log: true
+
+- name: Set replay protection (/opt/freeipa_replica_done)
+  file:
+    path: /opt/freeipa_replica_done
+    state: touch
+    owner: root
+    group: root
+    mode: '0744'
+  when:
+    - freeipa_replica_done.stat.exists != True
+...

@@ -1,0 +1,5 @@
+---
+hostname: "auth2"
+prod_ip_addr: "10.51.21.182"
+primary_interface: "eth0"
+...

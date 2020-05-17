@@ -1,0 +1,49 @@
+---
+- meta: end_play
+  when: (ansible_distribution != "CentOS" and ansible_distribution_major_version != "7")
+
+- name: Kerberos init
+  shell: "{{ item }}"
+  with_items:
+    - "echo -n \'{{ IPA_password }}\' | kinit admin"
+  no_log: true
+
+- name: Allow hosts to retrieve and create service keytab
+  shell: "{{ item }}"
+  with_items:
+    - "ipa service-allow-retrieve-keytab nfs/{{ cluster_name }}.{{ domain }} --hosts={{ workstation }}.{{ domain }}"
+    - "kdestroy"
+  ignore_errors: yes
+
+- name: Kerberos init
+  shell: "{{ item }}"
+  with_items:
+    - "echo -n \'{{ IPA_password }}\' | kinit admin"
+  no_log: true
+
+- name: Retrieve service keytab on {{ workstation }}.{{ domain }}
+  shell: "{{ item }}"
+  with_items:
+    - "kinit -kt /etc/krb5.keytab"
+    - "ipa-getkeytab -r -s {{ first_idm_server }}.{{ domain }} -p nfs/{{ cluster_name }}.{{ domain }} -k /etc/krb5.keytab"
+    - "kdestroy"
+  notify: "restart rpc_gssd"
+
+- meta: flush_handlers
+
+- name: Mount and bind NFS share
+  mount:
+    path: "{{ nfs_mount_path }}"
+    src: "{{ cluster_name }}.{{ domain }}:/"
+    opts: "vers=4.2,sec=krb5p,noatime,nodiratime,noexec,nosuid,soft,timeo=300,retrans=2"
+    state: mounted
+    fstype: nfs4
+
+- name: Install rsync for demonstration
+  yum:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+    - rsync
+...
