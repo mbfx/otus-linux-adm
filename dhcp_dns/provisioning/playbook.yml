@@ -1,0 +1,274 @@
+---
+- hosts: all # part running on all hosts
+  become: true
+  tasks:
+  - name: install packages
+    yum:
+      name: "{{ packages }}"
+      state: present
+    vars:
+      packages:
+      - bind-utils
+      - ntp
+
+- hosts: ns01 # server ns01 provision
+  become: true
+  tasks:
+  - name: install packages
+    yum:
+      name: "{{ packages }}"
+      state: present
+    vars:
+      packages:
+      - bind
+  
+  - name: copy named.conf
+    copy:
+      src: files/ns01/named.conf
+      dest: /etc/named.conf
+      owner: root
+      group: named
+      mode: 0640
+
+  - name: copy master zone dns.lab
+    copy:
+      src: "{{ item }}"
+      dest: /var/named/
+      owner: root
+      group: named
+      mode: 0660
+    with_fileglob:
+      - files/ns01/named.dns*
+
+  - name: copy rev zones
+    copy:
+      src:  "{{ item }}"
+      dest: /var/named/
+      owner: root
+      group: named
+      mode: 0660
+    with_fileglob:
+      - files/ns01/named.50.168.192.rev*
+
+  - name: copy resolv.conf to server
+    copy:
+      src: files/ns01/resolv.conf
+      dest: /etc/resolv.conf
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: copy transferkey to server
+    copy:
+      src: files/named.zonetransfer.key.special
+      dest: /etc/named.zonetransfer.key
+      owner: root
+      group: named
+      mode: 0644
+
+  - name: set /etc/named permissions
+    file:
+      path: /etc/named
+      owner: root
+      group: named
+      mode: 0670
+
+  - name: ensure named is running and enabled
+    systemd:
+      name: named
+      state: restarted
+      enabled: yes
+
+  - name: install dhcpd
+    yum:
+      name: "{{ packages }}"
+      state: present
+    vars:
+      packages:
+      - dhcp
+
+  - name: copy dhcpd config
+    copy:
+      src: "{{ item }}"
+      dest: /etc/dhcp/dhcpd.conf
+      owner: root
+      group: root
+      mode: 0660
+    with_fileglob:
+      - files/ns01/dhcpd.conf
+    
+  - name: ensure dhcpd is running and enabled
+    systemd:
+      name: dhcpd
+      state: restarted
+      enabled: yes
+
+  - name: set ipv6 method
+    shell: "nmcli con mod \"System eth1\" ipv6.method auto"
+
+  - name: set IPv6 address
+    shell: "nmcli connection modify \"System eth1\" ipv6.addresses \"3ffe:501:ffff:100::1/64\""
+
+  - name: set connection state to up
+    shell: "nmcli connection up \"System eth1\""
+
+  - name: copy dhcpd6 config
+    copy:
+      src: "{{ item }}"
+      dest: /etc/dhcp/dhcpd6.conf
+      owner: root
+      group: root
+      mode: 0660
+    with_fileglob:
+      - files/ns01/dhcpd6.conf
+
+  - name: ensure dhcpd6 is running and enabled
+    systemd:
+      name: dhcpd6
+      state: restarted
+      enabled: yes
+
+  - name: add static route to relay network
+    shell: "nmcli connection modify \"System eth1\" +ipv4.routes \"192.168.60.0/24 192.168.50.200\""
+    
+  - name: set connection state to up
+    shell: "nmcli connection up \"System eth1\""
+
+- hosts: ns02 # server ns02 provision
+  become: true
+  tasks:
+  - name: install packages
+    yum:
+      name: "{{ packages }}"
+      state: present
+    vars:
+      packages:
+      - bind
+  
+  - name: copy named.conf
+    copy:
+      src: files/ns02/named.conf
+      dest: /etc/named.conf
+      owner: root
+      group: named
+      mode: 0640
+
+  - name: copy resolv.conf to the server
+    copy:
+      src: files/ns02/resolv.conf
+      dest: /etc/resolv.conf
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: copy transferkey to server
+    copy:
+      src: files/named.zonetransfer.key.special
+      dest: /etc/named.zonetransfer.key
+      owner: root
+      group: named
+      mode: 0644
+
+  - name: set /etc/named permissions
+    file:
+      path: /etc/named
+      owner: root
+      group: named
+      mode: 0670
+
+  - name: ensure named is running and enabled
+    systemd:
+      name: named
+      state: restarted
+      enabled: yes
+    
+- hosts: client1 # first client provision
+  become: true
+  tasks:
+  - name: install packages
+    yum:
+      name: "{{ packages }}"
+      state: present
+    vars:
+      packages:
+      - bind
+
+  - name: copy resolv.conf to the client
+    copy:
+      src: files/client/resolv.conf
+      dest: /etc/resolv.conf
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: copy rndc conf file
+    copy:
+      src: files/client/rndc.conf
+      dest: /home/vagrant/rndc.conf
+      owner: vagrant
+      group: vagrant
+      mode: 0644
+
+  - name: copy motd to the client
+    copy:
+      src: files/client/motd
+      dest: /etc/motd
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: copy transferkey to client
+    copy:
+      src: files/named.zonetransfer.key.special
+      dest: /etc/named.zonetransfer.key
+      owner: root
+      group: named
+      mode: 0644
+
+  - name: set ipv6 method
+    shell: "nmcli con mod \"System eth1\" ipv6.method dhcp"
+
+  - name: set connection state to up
+    shell: "nmcli connection up \"System eth1\""
+
+- hosts: client2 # second client provision
+  become: true
+  tasks:
+  - name: copy resolv.conf to the client
+    copy:
+      src: files/client2/resolv.conf
+      dest: /etc/resolv.conf
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: set ipv6 method
+    shell: "nmcli con mod \"System eth1\" ipv6.method dhcp"
+
+  - name: set connection state to up
+    shell: "nmcli connection up \"System eth1\""
+    
+- hosts: relay # second client provision
+  become: true
+  tasks:
+  - name: install dhcp package
+    yum:
+      name: "{{ packages }}"
+      state: present
+    vars:
+      packages:
+      - dhcp
+
+  - name: copy dhcrelay config
+    copy:
+      src: files/relay/dhcrelay.service
+      dest: /etc/systemd/system/dhcrelay.service
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: ensure dhcrelay is running and enabled
+    systemd:
+      name: dhcrelay
+      state: restarted
+      enabled: yes
