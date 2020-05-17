@@ -1,0 +1,58 @@
+---
+- name: net.ipv4.conf.all.forwarding to /etc/sysctl.conf
+  sysctl:
+    name: net.ipv4.conf.all.forwarding
+    value: "1"
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: net.ipv4.ip_forward to /etc/sysctl.conf
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: "1"
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: net.ipv4.conf.all.rp_filter to /etc/sysctl.conf
+  sysctl:
+    name: net.ipv4.conf.all.rp_filter
+    value: "2"
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: configuring /etc/sysconfig/network-scripts/ifcfg-eth0
+  replace:
+    path: /etc/sysconfig/network-scripts/ifcfg-eth0
+    regexp: '^DEFROUTE.*=.*'
+    replace: "DEFROUTE=no"
+  when: (ansible_hostname != "r1")
+
+- name: configuring /etc/sysconfig/network-scripts/ifcfg-eth0
+  lineinfile:
+    path: /etc/sysconfig/network-scripts/ifcfg-eth0
+    line: "DEFROUTE=no"
+    state: present
+  when: (ansible_hostname != "r1")
+
+- name: configuring /etc/sysconfig/network-scripts/ifcfg-lo
+  lineinfile:
+    path: /etc/sysconfig/network-scripts/ifcfg-lo
+    line: "DEVICE=lo"
+    state: present
+
+- name: ifcfg provision from template
+  template:
+    backup: true
+    owner: root
+    group: root
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: ifcfg-lo.2.j2, dest: "/etc/sysconfig/network-scripts/ifcfg-lo.2" }
+  notify:
+    - reload_connections
+    - restart_network
+...

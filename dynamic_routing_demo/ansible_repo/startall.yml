@@ -1,0 +1,35 @@
+---
+- name: base
+  hosts: all
+  become: true
+  tags:
+    - base
+
+  roles:
+    - base_config
+
+- name: clients
+  hosts:
+    - a0client
+    - a1client
+  become: true
+  tags:
+    - network
+
+  roles:
+    - net_install_client
+
+- name: quagga
+  hosts:
+    - r1
+    - r2
+    - r3
+    - r4
+    - b1
+  become: true
+  tags:
+    - network
+
+  roles:
+    - install_quagga
+...

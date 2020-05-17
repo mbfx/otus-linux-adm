@@ -1,0 +1,4 @@
+---
+domain: mydomain.test # Имя домена глобально
+ntp_timezone: Europe/Kaliningrad # Часовой пояс
+...

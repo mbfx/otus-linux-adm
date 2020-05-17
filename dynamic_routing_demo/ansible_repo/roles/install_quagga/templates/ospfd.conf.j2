@@ -1,0 +1,9 @@
+interface lo
+!
+router ospf
+ospf router-id {{ loop_address }}
+passive-interface default
+network {{ loop_address }}/32 area 0
+!
+line vty
+!

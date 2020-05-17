@@ -1,0 +1,65 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure(2) do |config|
+  config.vm.box = "centos/7"
+  config.vm.box_version = "1905.1"
+
+  config.vm.provider "virtualbox" do |v|
+    v.memory = 256
+    v.cpus = 1
+  end
+
+  config.vm.define "r1" do |r1|
+    r1.vm.network "private_network", ip: "172.16.0.1", virtualbox__intnet: "area0"
+    r1.vm.hostname = "r1"
+  end
+
+  config.vm.define "r2" do |r2|
+    r2.vm.network "private_network", ip: "172.16.0.2", virtualbox__intnet: "area0"
+    r2.vm.network "private_network", ip: "172.16.1.1", virtualbox__intnet: "area1"
+    r2.vm.network "private_network", ip: "172.31.0.1", virtualbox__intnet: "area0reserved"
+    r2.vm.hostname = "r2"
+  end
+
+  config.vm.define "r3" do |r3|
+    r3.vm.network "private_network", ip: "172.16.0.3", virtualbox__intnet: "area0"
+    r3.vm.network "private_network", ip: "192.168.0.1", virtualbox__intnet: "area0clients"
+    r3.vm.network "private_network", ip: "172.31.0.2", virtualbox__intnet: "area0reserved"
+    r3.vm.hostname = "r3"
+  end
+
+  config.vm.define "r4" do |r4|
+    r4.vm.network "private_network", ip: "172.16.1.2", virtualbox__intnet: "area1"
+    r4.vm.network "private_network", ip: "192.168.1.1", virtualbox__intnet: "area1clients"
+    r4.vm.network "private_network", ip: "172.31.1.2", virtualbox__intnet: "ext"
+    r4.vm.hostname = "r4"
+  end
+
+  config.vm.define "b1" do |b1|
+    b1.vm.network "private_network", ip: "172.31.1.1", virtualbox__intnet: "ext"
+    b1.vm.hostname = "b1"
+  end
+
+  config.vm.define "a0client" do |a0client|
+    a0client.vm.network "private_network", ip: "192.168.0.2", virtualbox__intnet: "area0clients"
+    a0client.vm.hostname = "a0client"
+  end
+
+  config.vm.define "a1client" do |a1client|
+    a1client.vm.network "private_network", ip: "192.168.1.2", virtualbox__intnet: "area1clients"
+    a1client.vm.hostname = "a1client"
+  end
+
+  config.vm.provision "ansible" do |ansible|
+    ansible.verbose = "v"
+    ansible.playbook = "ansible_repo/startall.yml"
+    ansible.become = "true"
+  end
+
+  config.vm.provision "shell", run: "always", inline: <<-SHELL
+    ip route delete default 2>&1 >/dev/null || true
+    systemctl restart network
+    SHELL
+
+end
