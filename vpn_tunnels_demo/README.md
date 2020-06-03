@@ -109,6 +109,8 @@ mute 20
 #</tls-auth>
 ```
 
+При запуске OpenVPN с приведёнными выше конфигами не забываем, что selinux так просто не даст занять нестандартный порт.
+
 ### Пример конфигурации IPSec для libreswan
 
 - [/etc/ipsec.d/demo-con.conf](provisioning/templates/r2-ipsec.d.conf.j2)
