@@ -2,6 +2,7 @@
 
 Попробуйте настроить разные туннели ориентируясь на приведенную ниже схему.
 Конечная маршрутизация должна работать во все стороны. Доступ в Интернет обеспечивать необязательно, но приветствуется.
+На стенде уже сразу настроен и работает туннель IPSec между R2 и R3.
 
 ![](docs/vpn.png)
 
@@ -21,8 +22,8 @@ ip link set eth0 master bridge0
 bridge link
 ```
 или файлами:
-[ifcfg-bridge0](provisioning/templates/ifcfg-bridge0.j2)
-[fcfg-eth1](provisioning/templates/ifcfg-eth1.j2)
+- [ifcfg-bridge0](provisioning/templates/ifcfg-bridge0.j2)
+- [fcfg-eth1](provisioning/templates/ifcfg-eth1.j2)
 
 
 ### Пример конфигурации GRE
@@ -40,7 +41,13 @@ ifconfig tun0 mtu 1476 up
 ```
 yum install epel-release
 yum install easy-rsa
-cp 
+./easyrsa clean-all # Очищаем существующую инфраструктуру
+./easyrsa init-pki # Инициализируем новую инфраструктуру
+./easyrsa build-ca nopass # Генерируем корневую ключевую пару и сертификат
+./easyrsa build-server-full 10.0.0.2 nopass # Генерируем ключевую пару и сертификат для сервера
+./easyrsa build-client-full 10.0.0.3 nopass # Генерируем ключевую пару и сертификат для клиента
+./easyrsa gen-dh # Генерация ключа Диффи-Хеллмана
+openvpn --genkey --secret pki/ta.key # Генерируем ключ предварительной аутентификации для TLS
 ```
 
 Сервер:
@@ -54,6 +61,8 @@ ca ca.crt
 cert 10.0.0.3.crt 
 key 10.0.0.3.key
 dh dh.pem
+#tls-auth ta.key 0
+#tls-server
 server 172.16.0.0 255.255.255.0
 route 192.168.3.0 255.255.255.0
 push "route 192.168.3.0 255.255.255.0"
@@ -72,6 +81,7 @@ mute 20
 Клиент:
 ```
 client
+#tls-client
 remote 10.0.0.3
 port 10000
 proto udp
@@ -89,12 +99,15 @@ mute 20
 </key>
 <dh>
 </dh>
+#key-direction 1
+#<tls-auth>
+#</tls-auth>
 ```
 
 ### Пример конфигурации IPSec для libreswan
 
-[/etc/ipsec.d/demo-con.conf](provisioning/templates/r2-ipsec.d.conf.j2)
-[/etc/ipsec.d/demo-con.secrets](provisioning/templates/r2-ipsec.d.secrets.j2)
-[/etc/ipsec.conf](provisioning/templates/ipsec.conf.j2)
+- [/etc/ipsec.d/demo-con.conf](provisioning/templates/r2-ipsec.d.conf.j2)
+- [/etc/ipsec.d/demo-con.secrets](provisioning/templates/r2-ipsec.d.secrets.j2)
+- [/etc/ipsec.conf](provisioning/templates/ipsec.conf.j2)
 
 Проверку работы IPSec можно осуществить сделав ping с S3 на S2-1 (или S2-2) и одновременно прослушивая трафик интерфейса eth2 на R2 (или R3) - там будут наблюдаться пакеты ESP.
