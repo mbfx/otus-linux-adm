@@ -34,6 +34,17 @@ ip tunnel add tun0 mode gre remote <REMOTE_IP> local <LOCAL_IP> dev eth0
 ip address add <TUNNEL_LOCAL_IP>/<TUNNEL_LOCAL_NETMASK> dev tun0
 ifconfig tun0 mtu 1476 up
 ```
+или файлами /etc/sysconfig/networking/ifcfg-tun0
+```
+DEVICE=tun0
+BOOTPROTO=none
+ONBOOT=no
+TYPE=GRE
+MY_OUTER_IPADDR=10.0.0.3 # Локальный исходящий адрес
+MY_INNER_IPADDR=172.16.0.2 # Локальный адрес внутри GRE-туннеля
+PEER_OUTER_IPADDR=10.0.0.2 # Адрес удалённого хоста
+PEER_INNER_IPADDR=172.16.0.1 # Адрес удалённого хоста внутри GRE-туннеля
+```
 
 ### Пример конфигурации OpenVPN
 
