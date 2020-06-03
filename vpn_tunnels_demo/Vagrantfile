@@ -1,0 +1,67 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure(2) do |config|
+  config.vm.box = "centos/7"
+
+  config.vm.provision "ansible" do |ansible|
+    #ansible.verbose = "vvv"
+    ansible.playbook = "provisioning/playbook.yml"
+    ansible.become = "true"
+  end
+
+  config.vm.provider "virtualbox" do |v|
+    v.memory = 256
+    v.cpus = 1
+  end
+
+  config.vm.define "s1" do |s1|
+    s1.vm.network "private_network", ip: "192.168.1.100", virtualbox__intnet: "net1"
+    s1.vm.hostname = "s1"
+  end
+
+  config.vm.define "s2-1" do |s21|
+    s21.vm.network "private_network", ip: "192.168.2.100", virtualbox__intnet: "net2.1"
+    s21.vm.hostname = "s2-1"
+    s21.vm.provider :virtualbox do |virtualbox|
+      virtualbox.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"] # Vagrant L2 fix
+    end
+  end
+
+  config.vm.define "s2-2" do |s22|
+    s22.vm.network "private_network", ip: "192.168.2.101", virtualbox__intnet: "net2.2"
+    s22.vm.hostname = "s2-2"
+    s22.vm.provider :virtualbox do |virtualbox|
+      virtualbox.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"] # Vagrant L2 fix
+    end
+  end
+
+  config.vm.define "s3" do |s3|
+    s3.vm.network "private_network", ip: "192.168.3.100", virtualbox__intnet: "net3"
+    s3.vm.hostname = "s3"
+  end
+
+  config.vm.define "r1" do |r1|
+    r1.vm.network "private_network", ip: "192.168.1.1", virtualbox__intnet: "net1"
+    r1.vm.network "private_network", ip: "10.0.0.1", virtualbox__intnet: "isp"
+    r1.vm.hostname = "r1"
+  end
+
+  config.vm.define "r2" do |r2|
+    r2.vm.network "private_network", virtualbox__intnet: "net2.1"
+    r2.vm.network "private_network", ip: "10.0.0.2", virtualbox__intnet: "isp"
+    r2.vm.network "private_network", virtualbox__intnet: "net2.2"
+    r2.vm.hostname = "r2"
+    r2.vm.provider :virtualbox do |virtualbox|
+      virtualbox.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"] # Vagrant L2 fix
+      virtualbox.customize ["modifyvm", :id, "--nicpromisc4", "allow-all"] # Vagrant L2 fix
+    end
+  end
+
+  config.vm.define "r3" do |r3|
+    r3.vm.network "private_network", ip: "192.168.3.1", virtualbox__intnet: "net3"
+    r3.vm.network "private_network", ip: "10.0.0.3", virtualbox__intnet: "isp"
+    r3.vm.hostname = "r3"
+  end
+
+end

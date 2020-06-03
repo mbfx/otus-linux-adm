@@ -1,0 +1,148 @@
+---
+- hosts: all
+  become: true
+  tasks:
+  - name: install packages
+    yum:
+      name: "{{ packages }}"
+      state: present
+    vars:
+      packages:
+      - epel-release
+      - tcpdump
+      - NetworkManager-glib
+      - nm-connection-editor
+      - libsemanage-python
+      - policycoreutils-python
+
+- hosts: 
+    - r1
+    - r2
+    - r3
+  become: true
+  tasks:
+  - name: install packages
+    yum:
+      name: "{{ packages }}"
+      state: present
+    vars:
+      packages:
+      - bridge-utils
+      - libreswan
+      - openvpn
+      - easy-rsa
+  - name: net.ipv4.conf.all.forwarding to /etc/sysctl.conf
+    sysctl:
+      name: net.ipv4.conf.all.forwarding
+      value: "1"
+      sysctl_set: yes
+      state: present
+      reload: yes
+  - name: net.ipv4.ip_forward to /etc/sysctl.conf
+    sysctl:
+      name: net.ipv4.ip_forward
+      value: "1"
+      sysctl_set: yes
+      state: present
+      reload: yes
+  - name: net.ipv4.conf.all.rp_filter to /etc/sysctl.conf
+    sysctl:
+      name: net.ipv4.conf.all.rp_filter
+      value: "2"
+      sysctl_set: yes
+      state: present
+      reload: yes
+
+- hosts: all
+  become: true
+  tasks:
+  - name: shell script
+    command: "{{ item }}"
+    with_items:
+      - "nmcli con modify \"System eth0\" ipv4.never-default yes"
+      - "nmcli connection up \"System eth0\""
+
+- hosts:
+    - s1
+  become: true
+  tasks:
+  - name: 1
+    command: "{{ item }}"
+    with_items:
+      - "nmcli con modify \"System eth1\" ipv4.gateway 192.168.1.1"
+      - "nmcli connection up \"System eth1\""
+
+- hosts:
+    - s2-1
+    - s2-2
+  become: true
+  tasks:
+  - name: 2
+    command: "{{ item }}"
+    with_items:
+      - "nmcli con modify \"System eth1\" ipv4.gateway 192.168.2.1"
+      - "nmcli connection up \"System eth1\""
+
+- hosts:
+    - s3
+  become: true
+  tasks:
+  - name: 3
+    command: "{{ item }}"
+    with_items:
+      - "nmcli con modify \"System eth1\" ipv4.gateway 192.168.3.1"
+      - "nmcli connection up \"System eth1\""
+
+- hosts:
+    - r2
+  become: true
+  tasks:
+  - name: ifcfg provision from template
+    template:
+      backup: true
+      owner: root
+      group: root
+      src: "{{ item.src }}"
+      dest: "{{ item.dest }}"
+    with_items:
+      - { src: ifcfg-bridge0.j2, dest: "/etc/sysconfig/network-scripts/ifcfg-bridge0" }
+      - { src: ifcfg-eth1.j2, dest: "/etc/sysconfig/network-scripts/ifcfg-eth1" }
+      - { src: ifcfg-eth3.j2, dest: "/etc/sysconfig/network-scripts/ifcfg-eth3" }
+      - { src: ipsec.conf.j2, dest: "/etc/ipsec.conf" }
+      - { src: r2-ipsec.d.conf.j2, dest: "/etc/ipsec.d/demo-con.conf" }
+      - { src: r2-ipsec.d.secrets.j2, dest: "/etc/ipsec.d/demo-con.secrets" }
+
+  - name: reload_connections
+    shell: "nmcli connection reload"
+
+  - name: restart_network
+    shell: "/etc/init.d/network restart"
+
+  - name: start IPSec
+    systemd:
+      name: ipsec
+      state: restarted
+      enabled: true
+
+- hosts:
+    - r3
+  become: true
+  tasks:
+  - name: ifcfg provision from template
+    template:
+      backup: true
+      owner: root
+      group: root
+      src: "{{ item.src }}"
+      dest: "{{ item.dest }}"
+    with_items:
+      - { src: ipsec.conf.j2, dest: "/etc/ipsec.conf" }
+      - { src: r3-ipsec.d.conf.j2, dest: "/etc/ipsec.d/demo-con.conf" }
+      - { src: r3-ipsec.d.secrets.j2, dest: "/etc/ipsec.d/demo-con.secrets" }
+
+  - name: start IPSec
+    systemd:
+      name: ipsec
+      state: restarted
+      enabled: true
+...
