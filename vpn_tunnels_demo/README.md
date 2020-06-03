@@ -44,10 +44,17 @@ yum install easy-rsa
 ./easyrsa clean-all # Очищаем существующую инфраструктуру
 ./easyrsa init-pki # Инициализируем новую инфраструктуру
 ./easyrsa build-ca nopass # Генерируем корневую ключевую пару и сертификат
+# Пояснение: ниже имена сервера и клиента совпадают с их IP-адресами
+# На практике тут будут фигурировать имена машин или их FQDN
 ./easyrsa build-server-full 10.0.0.3 nopass # Генерируем ключевую пару и сертификат для сервера
 ./easyrsa build-client-full 10.0.0.2 nopass # Генерируем ключевую пару и сертификат для клиента
 ./easyrsa gen-dh # Генерация ключа Диффи-Хеллмана
 openvpn --genkey --secret pki/ta.key # Генерируем ключ предварительной аутентификации для TLS
+```
+Ещё интереные команды:
+```
+./easyrsa revoke 10.0.0.2 # Отзыв сертификата клиента
+./easyrsa gen-crl # Генерация списка отозванных сертификатов
 ```
 
 Сервер:
@@ -61,11 +68,15 @@ ca ca.crt
 cert 10.0.0.3.crt 
 key 10.0.0.3.key
 dh dh.pem
+#crl-verify crl.pem
 #tls-auth ta.key 0
 #tls-server
 server 172.16.0.0 255.255.255.0
 route 192.168.3.0 255.255.255.0
 push "route 192.168.3.0 255.255.255.0"
+#push "redirect-gateway def1"
+#push "dhcp-option DNS 1.1.1.1"
+#push "dhcp-option DOMAIN mydomain.com"
 ifconfig-pool-persist ipp.txt
 client-config-dir ccd/
 keepalive 10 120
@@ -109,7 +120,7 @@ mute 20
 #</tls-auth>
 ```
 
-При запуске OpenVPN с приведёнными выше конфигами не забываем, что selinux так просто не даст занять нестандартный порт.
+При запуске OpenVPN с приведёнными выше конфигами не забываем, что selinux так просто не даст занять нестандартный порт. Также не забываем включать маршрутизацию на сервере (ip forwarding).
 
 ### Пример конфигурации IPSec для libreswan
 
