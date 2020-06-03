@@ -98,6 +98,7 @@ iroute 192.168.2.0 255.255.255.0
 ```
 client
 #tls-client
+#remote-cert-tls server
 remote 10.0.0.3
 port 10000
 proto udp
@@ -118,6 +119,11 @@ mute 20
 #key-direction 1
 #<tls-auth>
 #</tls-auth>
+#comp-lzo
+#tun-mtu 1500
+#mssfix 1450
+#nobind
+#resolv-retry infinite
 ```
 
 При запуске OpenVPN с приведёнными выше конфигами не забываем, что selinux так просто не даст занять нестандартный порт. Также не забываем включать маршрутизацию на сервере (ip forwarding).
