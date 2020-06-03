@@ -44,8 +44,8 @@ yum install easy-rsa
 ./easyrsa clean-all # Очищаем существующую инфраструктуру
 ./easyrsa init-pki # Инициализируем новую инфраструктуру
 ./easyrsa build-ca nopass # Генерируем корневую ключевую пару и сертификат
-./easyrsa build-server-full 10.0.0.2 nopass # Генерируем ключевую пару и сертификат для сервера
-./easyrsa build-client-full 10.0.0.3 nopass # Генерируем ключевую пару и сертификат для клиента
+./easyrsa build-server-full 10.0.0.3 nopass # Генерируем ключевую пару и сертификат для сервера
+./easyrsa build-client-full 10.0.0.2 nopass # Генерируем ключевую пару и сертификат для клиента
 ./easyrsa gen-dh # Генерация ключа Диффи-Хеллмана
 openvpn --genkey --secret pki/ta.key # Генерируем ключ предварительной аутентификации для TLS
 ```
@@ -67,6 +67,7 @@ server 172.16.0.0 255.255.255.0
 route 192.168.3.0 255.255.255.0
 push "route 192.168.3.0 255.255.255.0"
 ifconfig-pool-persist ipp.txt
+client-config-dir ccd/
 keepalive 10 120
 max-clients 32
 client-to-client
@@ -76,6 +77,10 @@ status /var/log/openvpn/openvpn-status.log
 log-append /var/log/openvpn/openvpn.log
 verb 4
 mute 20
+```
+В каталоге ccd на сервере находятся файлы по имени клиента. В данных файлах указываются сети, которые есть и должны быть доступны за клиентом(!). Пример содержимого такого файла (ccd/10.0.0.2):
+```
+iroute 192.168.2.0 255.255.255.0
 ```
 
 Клиент:
