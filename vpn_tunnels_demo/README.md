@@ -78,7 +78,7 @@ daemon
 mode server
 port 10000
 proto udp
-dev tap
+dev tun
 ca ca.crt
 cert 10.0.0.3.crt 
 key 10.0.0.3.key
@@ -117,7 +117,7 @@ client
 remote 10.0.0.3
 port 10000
 proto udp
-dev tap
+dev tun
 keepalive 10 120
 status /var/log/openvpn/openvpn-status.log
 log-append /var/log/openvpn/openvpn.log
@@ -141,7 +141,7 @@ mute 20
 #resolv-retry infinite
 ```
 
-При запуске OpenVPN с приведёнными выше конфигами не забываем, что selinux так просто не даст занять нестандартный порт. Также не забываем включать маршрутизацию на сервере (ip forwarding).
+При запуске OpenVPN с приведёнными выше конфигами не забываем, что selinux так просто не даст занять нестандартный порт. Также не забываем включать маршрутизацию на сервере (ip forwarding) и создать каталоги /var/log/openvpn/ и ccd/.
 
 ### Пример конфигурации IPSec для libreswan
 
