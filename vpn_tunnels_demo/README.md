@@ -21,8 +21,8 @@ ip link set eth0 master bridge0
 bridge link
 ```
 или файлами:
-![](provisioning/templates/ifcfg-bridge0.j2)
-![](provisioning/templates/ifcfg-eth1.j2)
+[ifcfg-bridge0](provisioning/templates/ifcfg-bridge0.j2)
+[fcfg-eth1](provisioning/templates/ifcfg-eth1.j2)
 
 
 ### Пример конфигурации GRE
@@ -35,6 +35,13 @@ ifconfig tun0 mtu 1476 up
 ```
 
 ### Пример конфигурации OpenVPN
+
+Пример генерации простого CA и файлов ключей/сертификатов (**в проде так не делать!**):
+```
+yum install epel-release
+yum install easy-rsa
+cp 
+```
 
 Сервер:
 ```
@@ -86,6 +93,8 @@ mute 20
 
 ### Пример конфигурации IPSec для libreswan
 
-![](provisioning/templates/r2-ipsec.d.conf.j2)
-![](provisioning/templates/r2-ipsec.d.secrets.j2)
-![](provisioning/templates/ipsec.conf.j2)
+[/etc/ipsec.d/demo-con.conf](provisioning/templates/r2-ipsec.d.conf.j2)
+[/etc/ipsec.d/demo-con.secrets](provisioning/templates/r2-ipsec.d.secrets.j2)
+[/etc/ipsec.conf](provisioning/templates/ipsec.conf.j2)
+
+Проверку работы IPSec можно осуществить сделав ping с S3 на S2-1 (или S2-2) и одновременно прослушивая трафик интерфейса eth2 на R2 (или R3) - там будут наблюдаться пакеты ESP.
