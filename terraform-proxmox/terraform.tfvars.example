@@ -1,0 +1,24 @@
+# Proxmox variables
+pm_api_url          = "https://proxmox-server01.example.com:8006/api2/json"
+pm_user             = "terraform-user@pve"
+pm_tls_insecure     = false
+pm_parallel         = 1
+pm_target_node_name = "pve"
+
+# VM common variables
+vm_count    = 1
+vm_template = "centos7-template"
+vm_prefix   = "prefix"
+vm_bridge   = "vmbr99"
+
+# VM cloud-init variables
+ci_user                 = "user"
+ci_ssh_public_keys_file = "public_keys"
+
+# VM specific variables
+vm_searchdomain     = "lan"
+vm_ip_network       = "192.168.1."
+vm_ip_network_start = "100"
+vm_ip_cidr          = "24"
+vm_ip_gateway       = "192.168.1.1"
+vm_ip_dns           = "192.168.1.1"
