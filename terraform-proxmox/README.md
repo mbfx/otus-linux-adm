@@ -5,7 +5,7 @@
 
 1. Install a third-party plugin for Proxmox environment. Take it from [here](https://github.com/Telmate/terraform-provider-proxmox). Follow the [instructions](https://github.com/Telmate/terraform-provider-proxmox/blob/master/docs/installation.md).
 
-1a. You need to place custom provider files into folder **~/.terraform.d/plugins/mycorp.io/mycorp/proxmox/1/linux_amd64/**
+You need to place custom provider files into folder **~/.terraform.d/plugins/mycorp.io/mycorp/proxmox/1/linux_amd64/**.
 This is a workaround until this provider is added to the HashiCorp Terraform Provider Registry.
 
 2. Create special user for provisioning on Proxmox. It needs to have the following rights:
