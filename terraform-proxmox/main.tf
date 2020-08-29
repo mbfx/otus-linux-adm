@@ -3,8 +3,8 @@ terraform {
   required_providers {
     proxmox = {
       version = "1"
-      source = "mycorp.io/mycorp/proxmox"
-      }
+      source  = "mycorp.io/mycorp/proxmox"
+    }
   }
 }
 
@@ -41,15 +41,15 @@ resource "proxmox_vm_qemu" "vm" {
     link_down = false
   }
 
-#  disk {
-#    id           = 1 # 0 - already exists in template OS
-#    size         = 1
-#    type         = "virtio"
-#    storage      = "ssd-lvm"
-#    storage_type = "lvmthin"
-#    iothread     = true
-#    discard      = "ignore"
-#  }
+  #  disk {
+  #    id           = 1 # 0 - already exists in template OS
+  #    size         = 1
+  #    type         = "virtio"
+  #    storage      = "ssd-lvm"
+  #    storage_type = "lvmthin"
+  #    iothread     = true
+  #    discard      = "ignore"
+  #  }
 
   force_create = false
   full_clone   = false

@@ -5,10 +5,10 @@
 
 1. Install a third-party plugin for Proxmox environment. Take it from [here](https://github.com/Telmate/terraform-provider-proxmox). Follow the [instructions](https://github.com/Telmate/terraform-provider-proxmox/blob/master/docs/installation.md).
 
-You need to place custom provider files into folder **~/.terraform.d/plugins/mycorp.io/mycorp/proxmox/1/linux_amd64/**.
+2. You need to place custom provider files into folder **~/.terraform.d/plugins/mycorp.io/mycorp/proxmox/1/linux_amd64/**.
 This is a workaround until this provider is added to the HashiCorp Terraform Provider Registry.
 
-2. Create special user for provisioning on Proxmox. It needs to have the following rights:
+3. Create special user for provisioning on Proxmox. It needs to have the following rights:
 ```
 Datastore.AllocateSpace
 Datastore.Audit
@@ -27,13 +27,13 @@ VM.Migrate
 VM.PowerMgmt
 ```
 
-2. Create linux OS template with cloud-init on Proxmox;
+4. Create linux OS template with cloud-init on Proxmox;
 
-3. Create your own file **terraform.tfvars** and put it into current folder. Example [here](terraform.tfvars.example);
+5. Create your own file **terraform.tfvars** and put it into current folder. Example [here](terraform.tfvars.example);
 
-4. Create your own file **public_keys** and put it into current folder, or use default from **~/.ssh/id_rsa.pub**. Example [here](public_keys.example);
+6. Create your own file **public_keys** and put it into current folder, or use default from **~/.ssh/id_rsa.pub**. Example [here](public_keys.example);
 
-5. Add additional configuration block (like that) into **main.tf** if you need additional disk storage. Documentation is [here](https://github.com/Telmate/terraform-provider-proxmox/blob/master/docs/resource_vm_qemu.md);
+7. Add additional configuration block (like that) into **main.tf** if you need additional disk storage. Documentation is [here](https://github.com/Telmate/terraform-provider-proxmox/blob/master/docs/resource_vm_qemu.md);
 ```
 disk {
         id = 4
@@ -46,7 +46,7 @@ disk {
     }
 ```
 
-6. Run the following commands:
+8. Run the following commands:
 ```bash
 terraform init
 terraform validate
