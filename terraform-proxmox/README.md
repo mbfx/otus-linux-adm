@@ -1,5 +1,7 @@
 ## Deployment with Terraform on Proxmox
 
+Successfully tested on terraform 12.
+
 1. Install a third-party plugin for Proxmox environment. Take it from [here](https://github.com/Telmate/terraform-provider-proxmox). Follow the [instructions](https://github.com/Telmate/terraform-provider-proxmox/blob/master/docs/installation.md).
 
 2. Create special user for provisioning on Proxmox. It needs to have the following rights:
@@ -26,7 +28,20 @@ VM.PowerMgmt
 
 4. Create your own file **public_keys** and put it into current folder, or use default from **~/.ssh/id_rsa.pub**. Example [here](public_keys.example);
 
-5. Run the following commands:
+5. Add additional configuration block (like that) into **main.tf** if you need additional disk storage. Documentation is [here](https://github.com/Telmate/terraform-provider-proxmox/blob/master/docs/resource_vm_qemu.md);
+```
+disk {
+        id = 4
+        size = 1
+        type = "virtio"
+        storage = "ssd-lvm"
+        storage_type = "lvmthin"
+        iothread = true
+        discard = "ignore"
+    }
+```
+
+6. Run the following commands:
 ```bash
 terraform init
 terraform validate
