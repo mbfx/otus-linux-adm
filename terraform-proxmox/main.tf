@@ -1,5 +1,11 @@
 terraform {
-  required_version = ">= 0.12"
+  required_version = ">= 0.13"
+  required_providers {
+    proxmox = {
+      version = "1"
+      source = "mycorp.io/mycorp/proxmox"
+      }
+  }
 }
 
 provider "proxmox" {
@@ -26,6 +32,7 @@ resource "proxmox_vm_qemu" "vm" {
   memory   = 1024
   scsihw   = "virtio-scsi-pci"
   bootdisk = "scsi0"
+
   network {
     id        = 0
     model     = "virtio"
@@ -33,6 +40,16 @@ resource "proxmox_vm_qemu" "vm" {
     firewall  = true
     link_down = false
   }
+
+#  disk {
+#    id           = 1 # 0 - already exists in template OS
+#    size         = 1
+#    type         = "virtio"
+#    storage      = "ssd-lvm"
+#    storage_type = "lvmthin"
+#    iothread     = true
+#    discard      = "ignore"
+#  }
 
   force_create = false
   full_clone   = false
