@@ -51,7 +51,7 @@ P.S. TUN also available. Just stop TAP VPN then start TUN VPN.
  - run `systemctl stop openvpn-server@tun` on __server1__
  - run `systemctl stop openvpn-client@tun` on __server2__
  - check connection by `ping 10.8.0.1` and `ping 10.8.0.2`
- - create routing rules by yourself because there is no routing rules!
+ - __create routing rules by yourself because there is no routing rules!__
 
 ## Scheme
 
