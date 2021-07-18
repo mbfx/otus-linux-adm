@@ -1,0 +1,111 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure(2) do |config|
+  config.vm.box = "centos/7"
+
+  config.vm.define "client1" do |client1|
+    client1.vm.network "private_network", adapter: 2, :device => "eth1", ip: "192.168.1.101", virtualbox__intnet: "int1"
+    client1.vm.hostname = "client1"
+    client1.vm.provider :virtualbox do |virtualbox|
+      virtualbox.name = "client1"
+      virtualbox.customize ["modifyvm", :id, "--memory", "256"]
+      virtualbox.customize ["modifyvm", :id, "--cpus", "1"]
+    end
+    client1.vm.provision "shell", run: "always", inline: <<-SHELL
+      mkdir -p ~root/.ssh
+      cp ~vagrant/.ssh/auth* ~root/.ssh
+      yum install epel-release -y -q
+      yum install iperf3 -y -q
+      ip a add 192.168.3.99/24 dev eth1
+    SHELL
+  end
+
+  config.vm.define "server1" do |server1|
+    server1.vm.network "private_network", adapter: 2, :device => "eth1", ip: "192.168.1.100", virtualbox__intnet: "int1"
+    server1.vm.network "private_network", adapter: 3, :device => "eth2", ip: "192.168.10.10", virtualbox__intnet: "ext"
+    server1.vm.hostname = "server1"
+    server1.vm.provider :virtualbox do |virtualbox|
+      virtualbox.name = "server1"
+      virtualbox.customize ["modifyvm", :id, "--memory", "512"]
+      virtualbox.customize ["modifyvm", :id, "--cpus", "2"]
+      virtualbox.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
+    end
+    server1.vm.provision "shell", run: "always", inline: <<-SHELL
+      mkdir -p ~root/.ssh
+      cp ~vagrant/.ssh/auth* ~root/.ssh
+      yum install epel-release -y -q
+      yum install openvpn iperf3 bridge-utils -y -q
+    SHELL
+    server1.vm.provision "file", run: "always", source: "static.key", destination: "/tmp/static.key"
+    server1.vm.provision "file", run: "always", source: "tap_server.conf", destination: "/tmp/tap.conf"
+    server1.vm.provision "file", run: "always", source: "tun_server.conf", destination: "/tmp/tun.conf"
+    server1.vm.provision "shell", run: "always", inline: <<-SHELL
+      sudo mv /tmp/static.key /etc/openvpn/server
+      sudo mv /tmp/tap.conf /etc/openvpn/server
+      sudo mv /tmp/tun.conf /etc/openvpn/server
+      systemctl disable openvpn-server@tun --now
+      systemctl enable openvpn-server@tap --now
+      brctl addbr br0
+      brctl addif br0 eth1
+      brctl addif br0 tap0
+      ip link set eth1 promisc on
+      ip link set tap0 promisc on
+      ip link set br0 up
+      ip a add 192.168.3.100/24 dev br0
+    SHELL
+  end
+
+  config.vm.define "server2" do |server2|
+    server2.vm.network "private_network", adapter: 2, :device => "eth1", ip: "192.168.2.100", virtualbox__intnet: "int2"
+    server2.vm.network "private_network", adapter: 3, :device => "eth2", ip: "192.168.10.20", virtualbox__intnet: "ext"
+    server2.vm.hostname = "server2"
+    server2.vm.provider :virtualbox do |virtualbox|
+      virtualbox.name = "server2"
+      virtualbox.customize ["modifyvm", :id, "--memory", "512"]
+      virtualbox.customize ["modifyvm", :id, "--cpus", "2"]
+      virtualbox.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
+    end
+    server2.vm.provision "shell", run: "always", inline: <<-SHELL
+      mkdir -p ~root/.ssh
+      cp ~vagrant/.ssh/auth* ~root/.ssh
+      yum install epel-release -y -q
+      yum install openvpn iperf3 bridge-utils -y -q
+    SHELL
+    server2.vm.provision "file", run: "always", source: "static.key", destination: "/tmp/static.key"
+    server2.vm.provision "file", run: "always", source: "tap_client.conf", destination: "/tmp/tap.conf"
+    server2.vm.provision "file", run: "always", source: "tun_client.conf", destination: "/tmp/tun.conf"
+    server2.vm.provision "shell", run: "always", inline: <<-SHELL
+      sudo mv /tmp/static.key /etc/openvpn/client
+      sudo mv /tmp/tap.conf /etc/openvpn/client
+      sudo mv /tmp/tun.conf /etc/openvpn/client
+      systemctl disable openvpn-client@tun --now
+      systemctl enable openvpn-client@tap --now
+      brctl addbr br0
+      brctl addif br0 eth1
+      brctl addif br0 tap0
+      ip link set eth1 promisc on
+      ip link set tap0 promisc on
+      ip link set br0 up
+      ip a add 192.168.3.101/24 dev br0
+    SHELL
+  end
+
+  config.vm.define "client2" do |client2|
+    client2.vm.network "private_network", adapter: 2, :device => "eth1", ip: "192.168.2.101", virtualbox__intnet: "int2"
+    client2.vm.hostname = "client2"
+    client2.vm.provider :virtualbox do |virtualbox|
+      virtualbox.name = "client2"
+      virtualbox.customize ["modifyvm", :id, "--memory", "256"]
+      virtualbox.customize ["modifyvm", :id, "--cpus", "1"]
+    end
+    client2.vm.provision "shell", run: "always", inline: <<-SHELL
+      mkdir -p ~root/.ssh
+      cp ~vagrant/.ssh/auth* ~root/.ssh
+      yum install epel-release -y -q
+      yum install iperf3 -y -q
+      ip a add 192.168.3.102/24 dev eth1
+    SHELL
+  end
+
+end
