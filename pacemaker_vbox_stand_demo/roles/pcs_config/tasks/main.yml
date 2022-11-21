@@ -7,13 +7,11 @@
   with_items:
     - " pcs cluster auth pcs1.{{ domain }} pcs2.{{ domain }} pcs3.{{ domain }} -u hacluster -p {{ pcs_password }}"
   no_log: true
-  
+
 - name: Check for replay (/opt/pcs_config_done exists)
   stat:
     path: /opt/pcs_config_done
   register: pcs_config_done
-
-
 
 - name: Configuring cluster (step 2)
   command: "{{ item }}"
@@ -32,8 +30,6 @@
   when:
     - pcs_config_done.stat.exists != True
 
-
-
 - name: Configuring cluster (step 3)
   command: "{{ item }}"
   with_items:
@@ -43,8 +39,6 @@
 - name: Wait a little
   pause:
     seconds: 10
-
-
 
 - name: Check for replay (/opt/pcs_fence_config_done exists)
   stat:
@@ -62,7 +56,7 @@
     - "pcs constraint location pcs3_fence_dev avoids pcs3.{{ domain }}"
   when: (ansible_virtualization_type == "virtualbox" and pcs_fence_config_done.stat.exists != True)
   no_log: true
-  
+
 - name: Set replay protection (/opt/pcs_fence_config_done)
   file:
     path: /opt/pcs_fence_config_done

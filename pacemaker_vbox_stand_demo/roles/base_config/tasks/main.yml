@@ -29,7 +29,7 @@
     - policycoreutils-python
 
 - name: Set hostname
-  hostname: 
+  hostname:
     name: "{{ ansible_hostname }}.{{ domain }}"
 
 - name: Add my own IP address to /etc/hosts instead localhost
@@ -42,22 +42,19 @@
   lineinfile:
     path: "/etc/hosts"
     state: present
-    line: "192.168.11.201 pcs1.{{ domain }} {{ ansible_hostname }}"
-  when: (ansible_hostname != "pcs1")
+    line: "192.168.56.201 pcs1.{{ domain }} pcs1"
 
 - name: Add pcs2 to /etc/hosts
   lineinfile:
     path: "/etc/hosts"
     state: present
-    line: "192.168.11.202 pcs2.{{ domain }} {{ ansible_hostname }}"
-  when: (ansible_hostname != "pcs2")
+    line: "192.168.56.202 pcs2.{{ domain }} pcs2"
 
 - name: Add pcs3 to /etc/hosts
   lineinfile:
     path: "/etc/hosts"
     state: present
-    line: "192.168.11.203 pcs3.{{ domain }} {{ ansible_hostname }}"
-  when: (ansible_hostname != "pcs3")
+    line: "192.168.56.203 pcs3.{{ domain }} pcs3"
 
 - name: Enable and start FirewallD
   systemd:

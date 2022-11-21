@@ -14,6 +14,14 @@
     - libtool
     - gcc
     - python-pip
+    - nss-devel
+    - libxml2-devel
+    - uuid-devel
+    - libuuid-devel
+    - libvirt-devel
+    - corosynclib-devel
+    - bison
+    - byacc
 
 - name: Install required pip modules
   pip:
@@ -41,6 +49,7 @@
     repo: 'https://github.com/ClusterLabs/fence-agents.git'
     dest: /root/fence-agents/
     clone: yes
+    version: "v4.7.1"
   when:
     - pcs_fence_install_done.stat.exists != True
 
